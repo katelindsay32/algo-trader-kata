@@ -3,6 +3,9 @@ package com.turleylabs.algo.trader.kata;
 import com.turleylabs.algo.trader.kata.framework.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RefactorMeAlgorithm extends BaseAlgorithm {
 
@@ -97,4 +100,77 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
         previousPrice = data.get(symbol).getPrice();
     }
 
+    //region ToStrings
+
+    private String MovingAverageToString(SimpleMovingAverage movingAverage) {
+        return "SimpleMovingAverage{" +
+                "symbol='" + movingAverage.getSymbol() +
+                "value='" + movingAverage.getValue() +
+                "isReady='" + movingAverage.isReady() +
+                '}';
+    }
+
+    private String TradeToString(Trade trade) {
+        return "Trade{" +
+                "symbol='" + trade.getSymbol() +
+                "averagePrice='" + trade.getAveragePrice() +
+                "numberOfShares='" + trade.getNumberOfShares() +
+                "date='" + trade.getDate() +
+                '}';
+    }
+
+    private String TradesArrayListToString(ArrayList<Trade> trades) {
+        StringBuilder arrayAsString = new StringBuilder("{");
+        for (Trade trade : trades) {
+            arrayAsString.append(TradeToString(trade));
+        }
+        arrayAsString.append("}");
+        String result = arrayAsString.toString();
+        return result;
+    }
+
+    private String CBOEToString(CBOE cboe) {
+        return "CBOE{" +
+                "close='" + cboe.getClose() +
+                '}';
+    }
+
+    private String HoldingToString(Holding holding) {
+        return "Holding{" +
+                "averagePrice='" + holding.getAveragePrice() +
+                "quantity='" + holding.getQuantity() +
+                '}';
+    }
+
+    private String PortfolioToString(Map<String, Holding> portfolio) {
+
+        StringBuilder mapAsString = new StringBuilder("{");
+        for (String key : portfolio.keySet()) {
+            mapAsString.append(key + "=" + HoldingToString(portfolio.get(key)) + ", ");
+        }
+        mapAsString.append("}");
+        return mapAsString.toString();
+    }
+
+    @Override
+    public String toString() {
+        return "RefactorMeAlgorithm{" +
+                "symbol='" + symbol + '\'' +
+                ", movingAverage200=" + MovingAverageToString(movingAverage200) +
+                ", movingAverage50=" + MovingAverageToString(movingAverage50) +
+                ", movingAverage21=" + MovingAverageToString(movingAverage21) +
+                ", movingAverage10=" + MovingAverageToString(movingAverage10) +
+                ", previousMovingAverage50=" + previousMovingAverage50 +
+                ", previousMovingAverage21=" + previousMovingAverage21 +
+                ", previousMovingAverage10=" + previousMovingAverage10 +
+                ", previousPrice=" + previousPrice +
+                ", previous=" + previous +
+                ", lastVix=" + CBOEToString(lastVix) +
+                ", boughtBelow50=" + boughtBelow50 +
+                ", tookProfits=" + tookProfits +
+                ", portfolio=" + PortfolioToString(portfolio) +
+                ", trades=" + TradesArrayListToString(trades) +
+                '}';
+    }
+    //endregion
 }

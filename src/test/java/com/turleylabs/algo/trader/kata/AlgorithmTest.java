@@ -1,5 +1,6 @@
 package com.turleylabs.algo.trader.kata;
 
+import org.approvaltests.Approvals;
 import org.junit.Test;
 
 public class AlgorithmTest {
@@ -10,7 +11,7 @@ public class AlgorithmTest {
 
         refactorAlgorithm.run();
 
-        //assert something
+        Approvals.verify(refactorAlgorithm);
     }
 
 }
