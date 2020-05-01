@@ -10,7 +10,6 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
     public AlgoData algoData;
 
     public boolean boughtBelow50;
-    public boolean tookProfits;
     public AlgorithmState algorithmState;
 
     public void initialize() {
@@ -41,11 +40,8 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
             this.log(String.format("No data for symbol %s", algoData.symbol));
             return;
         }
-        if (tookProfits) {
-            resetTookProfits(bar);
-        } else{
-            this.algorithmState = this.algorithmState.execute(this, bar);
-        }
+
+        this.algorithmState = this.algorithmState.execute(this, bar);
 
 
         algoData.previous = getDate();
@@ -64,29 +60,19 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
         return (newPrice - startingPrice) / startingPrice;
     }
 
-    private void resetTookProfits(Bar bar) {
-        if (bar.getPrice() < algoData.movingAverage10.getValue()) {
-            tookProfits = false;
-        }
-    }
-
-    private boolean doNotOwn(String symbol) {
-        return portfolio.getOrDefault(symbol, Holding.Default).getQuantity() == 0;
-    }
-
-    public void log(String msg){
+    public void log(String msg) {
         super.log(msg);
     }
 
-    public void setHoldings(String symbol, double amt){
+    public void setHoldings(String symbol, double amt) {
         super.setHoldings(symbol, amt);
     }
 
-    public Map<String, Holding> getPortfolio(){
+    public Map<String, Holding> getPortfolio() {
         return super.portfolio;
     }
 
-    public void liquidate(String symbol){
+    public void liquidate(String symbol) {
         super.liquidate(symbol);
     }
 
@@ -144,19 +130,6 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
     @Override
     public String toString() {
         return "RefactorMeAlgorithm{" +
-                "symbol='" + algoData.symbol + '\'' +
-                ", movingAverage200=" + MovingAverageToString(algoData.movingAverage200) +
-                ", movingAverage50=" + MovingAverageToString(algoData.movingAverage50) +
-                ", movingAverage21=" + MovingAverageToString(algoData.movingAverage21) +
-                ", movingAverage10=" + MovingAverageToString(algoData.movingAverage10) +
-                ", previousMovingAverage50=" + algoData.previousMovingAverage50 +
-                ", previousMovingAverage21=" + algoData.previousMovingAverage21 +
-                ", previousMovingAverage10=" + algoData.previousMovingAverage10 +
-                ", previousPrice=" + algoData.previousPrice +
-                ", previous=" + algoData.previous +
-                ", lastVix=" + CBOEToString(algoData.lastVix) +
-                ", boughtBelow50=" + boughtBelow50 +
-                ", tookProfits=" + tookProfits +
                 ", portfolio=" + PortfolioToString(portfolio) +
                 ", trades=" + TradesArrayListToString(trades) +
                 "}\n";

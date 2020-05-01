@@ -40,8 +40,7 @@ public class OwnStockState implements AlgorithmState {
                     if (algo.shouldSellAtGain(bar)) {
                         algo.log(String.format("Sell %s taking profits. Gain %.4f. Vix %.4f", algoData.symbol, change, algoData.lastVix.getClose()));
                         algo.liquidate(algoData.symbol);
-                        algo.tookProfits = true;
-                        return new NoStockState(this.algoData);
+                        return new TookProfitState(this.algoData);
                     }
                 }
             }

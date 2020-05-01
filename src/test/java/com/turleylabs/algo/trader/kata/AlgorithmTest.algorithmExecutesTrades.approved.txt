@@ -1,9 +1,4 @@
-RefactorMeAlgorithm{symbol='TQQQ', movingAverage200=SimpleMovingAverage{ symbol='TQQQ value='73.119589225 isReady='true}
-, movingAverage50=SimpleMovingAverage{ symbol='TQQQ value='96.6379794 isReady='true}
-, movingAverage21=SimpleMovingAverage{ symbol='TQQQ value='100.1728559047619 isReady='true}
-, movingAverage10=SimpleMovingAverage{ symbol='TQQQ value='87.0489997 isReady='true}
-, previousMovingAverage50=96.6379794, previousMovingAverage21=100.1728559047619, previousMovingAverage10=87.0489997, previousPrice=81.089996, previous=2020-03-05, lastVix=CBOE{close='39.619999}
-, boughtBelow50=false, tookProfits=false, portfolio={}
+RefactorMeAlgorithm{, portfolio={}
 , trades={Trade{ symbol='TQQQ averagePrice='3.206967 numberOfShares='31182 date='2011-01-04}
 Trade{ symbol='TQQQ averagePrice='3.514737 numberOfShares='31182 date='2011-01-14}
 Trade{ symbol='TQQQ averagePrice='3.417689 numberOfShares='32067 date='2011-01-25}
