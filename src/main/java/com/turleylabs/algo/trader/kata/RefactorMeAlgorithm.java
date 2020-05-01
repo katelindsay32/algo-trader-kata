@@ -2,51 +2,43 @@ package com.turleylabs.algo.trader.kata;
 
 import com.turleylabs.algo.trader.kata.framework.*;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Map;
 
 public class RefactorMeAlgorithm extends BaseAlgorithm {
 
-    String symbol = "TQQQ";
-    public SimpleMovingAverage movingAverage200;
-    public SimpleMovingAverage movingAverage50;
-    public SimpleMovingAverage movingAverage21;
-    public SimpleMovingAverage movingAverage10;
-    public double previousMovingAverage50;
-    public double previousMovingAverage21;
-    public double previousMovingAverage10;
-    public double previousPrice;
-    public LocalDate previous;
-    public CBOE lastVix;
+    public AlgoData algoData;
+
     public boolean boughtBelow50;
     public boolean tookProfits;
-    public AlgorithmState algorithmState = new NoStockState();
+    public AlgorithmState algorithmState;
 
     public void initialize() {
         this.setStartDate(2010, 3, 23);  //Set Start Date
         this.setEndDate(2020, 03, 06);
 
-        this.setCash(100000);             //Set Strategy Cash
+        algoData = new AlgoData();
 
-        movingAverage200 = this.SMA(symbol, 200);
-        movingAverage50 = this.SMA(symbol, 50);
-        movingAverage21 = this.SMA(symbol, 21);
-        movingAverage10 = this.SMA(symbol, 10);
+        algorithmState = new NoStockState(algoData);
+        this.setCash(100000);             //Set Strategy Cash
+        algoData.movingAverage200 = this.SMA(algoData.symbol, 200);
+        algoData.movingAverage50 = this.SMA(algoData.symbol, 50);
+        algoData.movingAverage21 = this.SMA(algoData.symbol, 21);
+        algoData.movingAverage10 = this.SMA(algoData.symbol, 10);
 
     }
 
     protected void onData(Slice data) {
         if (data.getCBOE("VIX") != null) {
-            lastVix = data.getCBOE("VIX");
+            algoData.lastVix = data.getCBOE("VIX");
         }
-        if (previous == getDate()) return;
+        if (algoData.previous == getDate()) return;
 
-        if (!movingAverage200.isReady()) return;
+        if (!algoData.movingAverage200.isReady()) return;
 
-        Bar bar = data.get(symbol);
+        Bar bar = data.get(algoData.symbol);
         if (bar == null) {
-            this.log(String.format("No data for symbol %s", symbol));
+            this.log(String.format("No data for symbol %s", algoData.symbol));
             return;
         }
         if (tookProfits) {
@@ -56,15 +48,15 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
         }
 
 
-        previous = getDate();
-        previousMovingAverage50 = movingAverage50.getValue();
-        previousMovingAverage21 = movingAverage21.getValue();
-        previousMovingAverage10 = movingAverage10.getValue();
-        previousPrice = bar.getPrice();
+        algoData.previous = getDate();
+        algoData.previousMovingAverage50 = algoData.movingAverage50.getValue();
+        algoData.previousMovingAverage21 = algoData.movingAverage21.getValue();
+        algoData.previousMovingAverage10 = algoData.movingAverage10.getValue();
+        algoData.previousPrice = bar.getPrice();
     }
 
     public boolean shouldSellAtGain(Bar bar) {
-        return bar.getPrice() >= (movingAverage50.getValue() * 1.15) && bar.getPrice() >= (movingAverage200.getValue() * 1.40);
+        return bar.getPrice() >= (algoData.movingAverage50.getValue() * 1.15) && bar.getPrice() >= (algoData.movingAverage200.getValue() * 1.40);
     }
 
 
@@ -73,7 +65,7 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
     }
 
     private void resetTookProfits(Bar bar) {
-        if (bar.getPrice() < movingAverage10.getValue()) {
+        if (bar.getPrice() < algoData.movingAverage10.getValue()) {
             tookProfits = false;
         }
     }
@@ -102,19 +94,19 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
 
     private String MovingAverageToString(SimpleMovingAverage movingAverage) {
         return "SimpleMovingAverage{" +
-                "symbol='" + movingAverage.getSymbol() +
-                "value='" + movingAverage.getValue() +
-                "isReady='" + movingAverage.isReady() +
-                '}';
+                " symbol='" + movingAverage.getSymbol() +
+                " value='" + movingAverage.getValue() +
+                " isReady='" + movingAverage.isReady() +
+                "}\n";
     }
 
     private String TradeToString(Trade trade) {
         return "Trade{" +
-                "symbol='" + trade.getSymbol() +
-                "averagePrice='" + trade.getAveragePrice() +
-                "numberOfShares='" + trade.getNumberOfShares() +
-                "date='" + trade.getDate() +
-                '}';
+                " symbol='" + trade.getSymbol() +
+                " averagePrice='" + trade.getAveragePrice() +
+                " numberOfShares='" + trade.getNumberOfShares() +
+                " date='" + trade.getDate() +
+                "}\n";
     }
 
     private String TradesArrayListToString(ArrayList<Trade> trades) {
@@ -122,22 +114,21 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
         for (Trade trade : trades) {
             arrayAsString.append(TradeToString(trade));
         }
-        arrayAsString.append("}");
-        String result = arrayAsString.toString();
-        return result;
+        arrayAsString.append("}\n");
+        return arrayAsString.toString();
     }
 
     private String CBOEToString(CBOE cboe) {
         return "CBOE{" +
                 "close='" + cboe.getClose() +
-                '}';
+                "}\n";
     }
 
     private String HoldingToString(Holding holding) {
         return "Holding{" +
                 "averagePrice='" + holding.getAveragePrice() +
                 "quantity='" + holding.getQuantity() +
-                '}';
+                "}\n";
     }
 
     private String PortfolioToString(Map<String, Holding> portfolio) {
@@ -146,29 +137,29 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
         for (String key : portfolio.keySet()) {
             mapAsString.append(key + "=" + HoldingToString(portfolio.get(key)) + ", ");
         }
-        mapAsString.append("}");
+        mapAsString.append("}\n");
         return mapAsString.toString();
     }
 
     @Override
     public String toString() {
         return "RefactorMeAlgorithm{" +
-                "symbol='" + symbol + '\'' +
-                ", movingAverage200=" + MovingAverageToString(movingAverage200) +
-                ", movingAverage50=" + MovingAverageToString(movingAverage50) +
-                ", movingAverage21=" + MovingAverageToString(movingAverage21) +
-                ", movingAverage10=" + MovingAverageToString(movingAverage10) +
-                ", previousMovingAverage50=" + previousMovingAverage50 +
-                ", previousMovingAverage21=" + previousMovingAverage21 +
-                ", previousMovingAverage10=" + previousMovingAverage10 +
-                ", previousPrice=" + previousPrice +
-                ", previous=" + previous +
-                ", lastVix=" + CBOEToString(lastVix) +
+                "symbol='" + algoData.symbol + '\'' +
+                ", movingAverage200=" + MovingAverageToString(algoData.movingAverage200) +
+                ", movingAverage50=" + MovingAverageToString(algoData.movingAverage50) +
+                ", movingAverage21=" + MovingAverageToString(algoData.movingAverage21) +
+                ", movingAverage10=" + MovingAverageToString(algoData.movingAverage10) +
+                ", previousMovingAverage50=" + algoData.previousMovingAverage50 +
+                ", previousMovingAverage21=" + algoData.previousMovingAverage21 +
+                ", previousMovingAverage10=" + algoData.previousMovingAverage10 +
+                ", previousPrice=" + algoData.previousPrice +
+                ", previous=" + algoData.previous +
+                ", lastVix=" + CBOEToString(algoData.lastVix) +
                 ", boughtBelow50=" + boughtBelow50 +
                 ", tookProfits=" + tookProfits +
                 ", portfolio=" + PortfolioToString(portfolio) +
                 ", trades=" + TradesArrayListToString(trades) +
-                '}';
+                "}\n";
     }
     //endregion
 }

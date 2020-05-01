@@ -7,34 +7,41 @@ import com.turleylabs.algo.trader.kata.framework.SimpleMovingAverage;
 
 public class OwnStockState implements AlgorithmState {
 
+    private AlgoData algoData;
+
+    public OwnStockState(AlgoData algoData) {
+
+        this.algoData = algoData;
+    }
+
     @Override
     public AlgorithmState execute(RefactorMeAlgorithm algo, Bar bar) {
         // check if sell
         // sell
         // return no stock state
-        Holding holding = algo.getPortfolio().get(algo.symbol);
+        Holding holding = algo.getPortfolio().get(algoData.symbol);
         double change = algo.computePercentageChanged(holding.getAveragePrice(), bar.getPrice());
 
-        if (droppedMoreThan7PctBelow50DayAndBoughtAbove50(bar, algo.movingAverage50, algo.boughtBelow50)) {
-            algo.log(String.format("Sell %s loss of 50 day. Gain %.4f. Vix %.4f", algo.symbol, change, algo.lastVix.getClose()));
-            algo.liquidate(algo.symbol);
-            return new NoStockState();
+        if (droppedMoreThan7PctBelow50DayAndBoughtAbove50(bar, algoData.movingAverage50, algo.boughtBelow50)) {
+            algo.log(String.format("Sell %s loss of 50 day. Gain %.4f. Vix %.4f", algoData.symbol, change, algoData.lastVix.getClose()));
+            algo.liquidate(algoData.symbol);
+            return new NoStockState(this.algoData);
         } else {
-            if (highVolitality(algo.lastVix)) {
-                algo.log(String.format("Sell %s high volatility. Gain %.4f. Vix %.4f", algo.symbol, change, algo.lastVix.getClose()));
-                algo.liquidate(algo.symbol);
-                return new NoStockState();
+            if (highVolitality(algoData.lastVix)) {
+                algo.log(String.format("Sell %s high volatility. Gain %.4f. Vix %.4f", algoData.symbol, change, algoData.lastVix.getClose()));
+                algo.liquidate(algoData.symbol);
+                return new NoStockState(this.algoData);
             } else {
-                if (tenDayAverageLessThan3PctBelow21Day(algo.movingAverage10, algo.movingAverage21)) {
-                    algo.log(String.format("Sell %s 10 day below 21 day. Gain %.4f. Vix %.4f", algo.symbol, change, algo.lastVix.getClose()));
-                    algo.liquidate(algo.symbol);
-                    return new NoStockState();
+                if (tenDayAverageLessThan3PctBelow21Day(algoData.movingAverage10, algoData.movingAverage21)) {
+                    algo.log(String.format("Sell %s 10 day below 21 day. Gain %.4f. Vix %.4f", algoData.symbol, change, algoData.lastVix.getClose()));
+                    algo.liquidate(algoData.symbol);
+                    return new NoStockState(this.algoData);
                 } else {
                     if (algo.shouldSellAtGain(bar)) {
-                        algo.log(String.format("Sell %s taking profits. Gain %.4f. Vix %.4f", algo.symbol, change, algo.lastVix.getClose()));
-                        algo.liquidate(algo.symbol);
+                        algo.log(String.format("Sell %s taking profits. Gain %.4f. Vix %.4f", algoData.symbol, change, algoData.lastVix.getClose()));
+                        algo.liquidate(algoData.symbol);
                         algo.tookProfits = true;
-                        return new NoStockState();
+                        return new NoStockState(this.algoData);
                     }
                 }
             }
