@@ -4,7 +4,6 @@ import com.turleylabs.algo.trader.kata.framework.*;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 
 public class RefactorMeAlgorithm extends BaseAlgorithm {
@@ -44,45 +43,35 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
 
         if (!movingAverage200.isReady()) return;
 
-        if (data.get(symbol) == null) {
+        Bar bar = data.get(symbol);
+        if (bar == null) {
             this.log(String.format("No data for symbol %s", symbol));
             return;
         }
         if (tookProfits) {
-            if (data.get(symbol).getPrice() < movingAverage10.getValue()) {
-                tookProfits = false;
-            }
-        } else if (portfolio.getOrDefault(symbol, Holding.Default).getQuantity() == 0) {
+            resetTookProfits(bar);
+        } else if (doNotOwn(symbol)) {
 
-            if (data.get(symbol).getPrice() > movingAverage10.getValue()
-                    && movingAverage10.getValue() > movingAverage21.getValue()
-                    && movingAverage10.getValue() > previousMovingAverage10
-                    && movingAverage21.getValue() > previousMovingAverage21
-                    && (double) (lastVix.getClose()) < 19.0
-                    && !(data.get(symbol).getPrice() >= (movingAverage50.getValue() * 1.15) && data.get(symbol).getPrice() >= (movingAverage200.getValue() * 1.40))
-                    && (data.get(symbol).getPrice() - movingAverage10.getValue()) / movingAverage10.getValue() < 0.07) {
-                this.log(String.format("Buy %s Vix %.4f. above 10 MA %.4f", symbol, lastVix.getClose(), (data.get(symbol).getPrice() - movingAverage10.getValue()) / movingAverage10.getValue()));
-                double amount = 1.0;
-                this.setHoldings(symbol, amount);
-
-                boughtBelow50 = data.get(symbol).getPrice() < movingAverage50.getValue();
+            if (shouldBuy(bar)) {
+                buy(bar);
             }
         } else {
-            double change = (data.get(symbol).getPrice() - portfolio.get(symbol).getAveragePrice()) / portfolio.get(symbol).getAveragePrice();
+            Holding holding = portfolio.get(symbol);
+            double change = computePercentageChanged(holding.getAveragePrice(), bar.getPrice());
 
-            if (data.get(symbol).getPrice() < (movingAverage50.getValue() * .93) && !boughtBelow50) {
+            if (droppedMoreThan7PctBelow50DayAndBoughtAbove50(bar)) {
                 this.log(String.format("Sell %s loss of 50 day. Gain %.4f. Vix %.4f", symbol, change, lastVix.getClose()));
                 this.liquidate(symbol);
             } else {
-                if ((double) (lastVix.getClose()) > 22.0) {
+                if (highVolitality()) {
                     this.log(String.format("Sell %s high volatility. Gain %.4f. Vix %.4f", symbol, change, lastVix.getClose()));
                     this.liquidate(symbol);
                 } else {
-                    if (movingAverage10.getValue() < 0.97 * movingAverage21.getValue()) {
+                    if (tenDayAverageLessThan3PctBelow21Day()) {
                         this.log(String.format("Sell %s 10 day below 21 day. Gain %.4f. Vix %.4f", symbol, change, lastVix.getClose()));
                         this.liquidate(symbol);
                     } else {
-                        if (data.get(symbol).getPrice() >= (movingAverage50.getValue() * 1.15) && data.get(symbol).getPrice() >= (movingAverage200.getValue() * 1.40)) {
+                        if (shouldSellAtGain(bar)) {
                             this.log(String.format("Sell %s taking profits. Gain %.4f. Vix %.4f", symbol, change, lastVix.getClose()));
                             this.liquidate(symbol);
                             tookProfits = true;
@@ -97,7 +86,55 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
         previousMovingAverage50 = movingAverage50.getValue();
         previousMovingAverage21 = movingAverage21.getValue();
         previousMovingAverage10 = movingAverage10.getValue();
-        previousPrice = data.get(symbol).getPrice();
+        previousPrice = bar.getPrice();
+    }
+
+    private boolean shouldSellAtGain(Bar bar) {
+        return bar.getPrice() >= (movingAverage50.getValue() * 1.15) && bar.getPrice() >= (movingAverage200.getValue() * 1.40);
+    }
+
+    private boolean tenDayAverageLessThan3PctBelow21Day() {
+        return movingAverage10.getValue() < 0.97 * movingAverage21.getValue();
+    }
+
+    private boolean highVolitality() {
+        return (double) (lastVix.getClose()) > 22.0;
+    }
+
+    private boolean droppedMoreThan7PctBelow50DayAndBoughtAbove50(Bar bar) {
+        return bar.getPrice() < (movingAverage50.getValue() * .93) && !boughtBelow50;
+    }
+
+    private double computePercentageChanged(double startingPrice, double newPrice) {
+        return (newPrice - startingPrice) / startingPrice;
+    }
+
+    private void buy(Bar bar) {
+        this.log(String.format("Buy %s Vix %.4f. above 10 MA %.4f", symbol, lastVix.getClose(), computePercentageChanged(movingAverage10.getValue(), bar.getPrice())));
+        double amount = 1.0;
+        this.setHoldings(symbol, amount);
+
+        boughtBelow50 = bar.getPrice() < movingAverage50.getValue();
+    }
+
+    private void resetTookProfits(Bar bar) {
+        if (bar.getPrice() < movingAverage10.getValue()) {
+            tookProfits = false;
+        }
+    }
+
+    private boolean shouldBuy(Bar bar) {
+        return bar.getPrice() > movingAverage10.getValue()
+                && movingAverage10.getValue() > movingAverage21.getValue()
+                && movingAverage10.getValue() > previousMovingAverage10
+                && movingAverage21.getValue() > previousMovingAverage21
+                && (double) (lastVix.getClose()) < 19.0
+                && !(shouldSellAtGain(bar))
+                && computePercentageChanged(movingAverage10.getValue(), bar.getPrice()) < 0.07;
+    }
+
+    private boolean doNotOwn(String symbol) {
+        return portfolio.getOrDefault(symbol, Holding.Default).getQuantity() == 0;
     }
 
     //region ToStrings
