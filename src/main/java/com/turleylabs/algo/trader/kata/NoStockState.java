@@ -14,10 +14,18 @@ public class NoStockState implements AlgorithmState {
 
         if (shouldBuy(algo, bar)) {
             buy(algo, bar);
+            if (boughtAbove50(bar)) {
+                return new BoughtAbove50State(algoData);
+            }
+
             return new OwnStockState(algoData);
         }
 
         return this;
+    }
+
+    private boolean boughtAbove50(Bar bar) {
+        return bar.getPrice() > algoData.movingAverage50.getValue();
     }
 
     private boolean shouldBuy(RefactorMeAlgorithm algo, Bar bar) {
@@ -34,6 +42,5 @@ public class NoStockState implements AlgorithmState {
         algo.log(String.format("Buy %s Vix %.4f. above 10 MA %.4f", algoData.symbol, algoData.lastVix.getClose(), algo.computePercentageChanged(algoData.movingAverage10.getValue(), bar.getPrice())));
         double amount = 1.0;
         algo.setHoldings(algoData.symbol, amount);
-        algo.boughtBelow50 = bar.getPrice() < algoData.movingAverage50.getValue();
     }
 }

@@ -9,7 +9,6 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
 
     public AlgoData algoData;
 
-    public boolean boughtBelow50;
     public AlgorithmState algorithmState;
 
     public void initialize() {
