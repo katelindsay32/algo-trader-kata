@@ -9,18 +9,19 @@ import java.util.Map;
 public class RefactorMeAlgorithm extends BaseAlgorithm {
 
     String symbol = "TQQQ";
-    SimpleMovingAverage movingAverage200;
-    SimpleMovingAverage movingAverage50;
-    SimpleMovingAverage movingAverage21;
-    SimpleMovingAverage movingAverage10;
-    double previousMovingAverage50;
-    double previousMovingAverage21;
-    double previousMovingAverage10;
-    double previousPrice;
-    LocalDate previous;
-    CBOE lastVix;
-    boolean boughtBelow50;
-    boolean tookProfits;
+    public SimpleMovingAverage movingAverage200;
+    public SimpleMovingAverage movingAverage50;
+    public SimpleMovingAverage movingAverage21;
+    public SimpleMovingAverage movingAverage10;
+    public double previousMovingAverage50;
+    public double previousMovingAverage21;
+    public double previousMovingAverage10;
+    public double previousPrice;
+    public LocalDate previous;
+    public CBOE lastVix;
+    public boolean boughtBelow50;
+    public boolean tookProfits;
+    public AlgorithmState algorithmState = new NoStockState();
 
     public void initialize() {
         this.setStartDate(2010, 3, 23);  //Set Start Date
@@ -50,35 +51,8 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
         }
         if (tookProfits) {
             resetTookProfits(bar);
-        } else if (doNotOwn(symbol)) {
-
-            if (shouldBuy(bar)) {
-                buy(bar);
-            }
-        } else {
-            Holding holding = portfolio.get(symbol);
-            double change = computePercentageChanged(holding.getAveragePrice(), bar.getPrice());
-
-            if (droppedMoreThan7PctBelow50DayAndBoughtAbove50(bar)) {
-                this.log(String.format("Sell %s loss of 50 day. Gain %.4f. Vix %.4f", symbol, change, lastVix.getClose()));
-                this.liquidate(symbol);
-            } else {
-                if (highVolitality()) {
-                    this.log(String.format("Sell %s high volatility. Gain %.4f. Vix %.4f", symbol, change, lastVix.getClose()));
-                    this.liquidate(symbol);
-                } else {
-                    if (tenDayAverageLessThan3PctBelow21Day()) {
-                        this.log(String.format("Sell %s 10 day below 21 day. Gain %.4f. Vix %.4f", symbol, change, lastVix.getClose()));
-                        this.liquidate(symbol);
-                    } else {
-                        if (shouldSellAtGain(bar)) {
-                            this.log(String.format("Sell %s taking profits. Gain %.4f. Vix %.4f", symbol, change, lastVix.getClose()));
-                            this.liquidate(symbol);
-                            tookProfits = true;
-                        }
-                    }
-                }
-            }
+        } else{
+            this.algorithmState = this.algorithmState.execute(this, bar);
         }
 
 
@@ -89,32 +63,13 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
         previousPrice = bar.getPrice();
     }
 
-    private boolean shouldSellAtGain(Bar bar) {
+    public boolean shouldSellAtGain(Bar bar) {
         return bar.getPrice() >= (movingAverage50.getValue() * 1.15) && bar.getPrice() >= (movingAverage200.getValue() * 1.40);
     }
 
-    private boolean tenDayAverageLessThan3PctBelow21Day() {
-        return movingAverage10.getValue() < 0.97 * movingAverage21.getValue();
-    }
 
-    private boolean highVolitality() {
-        return (double) (lastVix.getClose()) > 22.0;
-    }
-
-    private boolean droppedMoreThan7PctBelow50DayAndBoughtAbove50(Bar bar) {
-        return bar.getPrice() < (movingAverage50.getValue() * .93) && !boughtBelow50;
-    }
-
-    private double computePercentageChanged(double startingPrice, double newPrice) {
+    public double computePercentageChanged(double startingPrice, double newPrice) {
         return (newPrice - startingPrice) / startingPrice;
-    }
-
-    private void buy(Bar bar) {
-        this.log(String.format("Buy %s Vix %.4f. above 10 MA %.4f", symbol, lastVix.getClose(), computePercentageChanged(movingAverage10.getValue(), bar.getPrice())));
-        double amount = 1.0;
-        this.setHoldings(symbol, amount);
-
-        boughtBelow50 = bar.getPrice() < movingAverage50.getValue();
     }
 
     private void resetTookProfits(Bar bar) {
@@ -123,18 +78,24 @@ public class RefactorMeAlgorithm extends BaseAlgorithm {
         }
     }
 
-    private boolean shouldBuy(Bar bar) {
-        return bar.getPrice() > movingAverage10.getValue()
-                && movingAverage10.getValue() > movingAverage21.getValue()
-                && movingAverage10.getValue() > previousMovingAverage10
-                && movingAverage21.getValue() > previousMovingAverage21
-                && (double) (lastVix.getClose()) < 19.0
-                && !(shouldSellAtGain(bar))
-                && computePercentageChanged(movingAverage10.getValue(), bar.getPrice()) < 0.07;
-    }
-
     private boolean doNotOwn(String symbol) {
         return portfolio.getOrDefault(symbol, Holding.Default).getQuantity() == 0;
+    }
+
+    public void log(String msg){
+        super.log(msg);
+    }
+
+    public void setHoldings(String symbol, double amt){
+        super.setHoldings(symbol, amt);
+    }
+
+    public Map<String, Holding> getPortfolio(){
+        return super.portfolio;
+    }
+
+    public void liquidate(String symbol){
+        super.liquidate(symbol);
     }
 
     //region ToStrings
